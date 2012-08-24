@@ -1,0 +1,122 @@
+#!/usr/bin/env python
+
+import sys
+import requests
+from requests.auth import HTTPBasicAuth
+import subprocess
+import datetime
+import decimal
+from bs4 import BeautifulSoup
+import argparse
+
+def main():
+
+  parser = argparse.ArgumentParser()
+  subparsers = parser.add_subparsers()
+  parser.set_defaults(view='time')
+
+  parser_view = subparsers.add_parser('view')
+  parser_view.add_argument('time', choices=['day', 'week', 'yesterday', ], default='day', nargs='?')
+
+  args = parser.parse_args()
+  print args.time
+  if args.time == 'day':
+    listToday()
+
+  elif args.time == 'yesterday':
+    listYesterday()
+  
+
+def listYesterday():
+  today = datetime.date.today()
+  yesterday = today - datetime.timedelta(1)
+
+  breakdown = basecamp.hoursByDay(yesterday)
+  total = 0
+  for key, value in breakdown.iteritems():
+    print "{0:>30s}=>{1:10.1f}".format(basecamp.getProjectName(key), value)
+    total += value
+
+  print "-"*22
+  print "{0:>10}=>{1:10.1f}".format("Total", total)
+
+
+def listToday():
+  #total = basecamp.hoursToday()
+  #print str(total) + " hours logged in basecamp today"
+  breakdown = basecamp.hoursToday()
+
+
+  total = 0
+  for key, value in breakdown.iteritems():
+    print "{0:>30s}=>{1:10.1f}".format(basecamp.getProjectName(key), value)
+    total += value
+
+  print "-"*22
+  print "{0:>10}=>{1:10.1f}".format("Total", total)
+
+
+
+
+class Basecamp:
+  def __init__(self):
+    # get the config from git
+    self.bcUser = subprocess.check_output("git config basecamp.user-id", shell=True).strip()
+    self.bcKey = subprocess.check_output("git config basecamp.key", shell=True).strip()
+    self.bcUrl = subprocess.check_output("git config basecamp.url", shell=True).strip()
+    self.auth = HTTPBasicAuth(self.bcKey, '')
+
+
+  # returns beautifulsoup object of the time report
+  def getReport(self, fromDate, toDate):
+    r = requests.get(self.bcUrl + "/time_entries/report.xml?subject_id=" + self.bcUser + "&from=" + fromDate + "&to=" + toDate, auth=self.auth)
+    return BeautifulSoup(r.text)
+
+  def hoursToday(self):
+    now = datetime.datetime.now()
+    bcDate = now.strftime("%Y%m%d")
+
+    entries = self.getReport(bcDate, bcDate)
+
+    total = 0
+    for time in entries.findAll('hours'):
+      total += float(time.string)
+
+    return total
+
+  def getProjectName(self, project_id):
+    r = requests.get(self.bcUrl + "/projects/" + project_id + ".xml", auth=self.auth)
+    xml = BeautifulSoup(r.text)
+
+    return xml.find("name").string
+  
+  def hoursByDay(self, date):
+    bcDate = date.strftime("%Y%m%d")
+
+    entries = self.getReport(bcDate, bcDate)
+    projects = {}
+    total = 0
+
+    for entry in entries.findAll('time-entry'):
+      time = float(entry.find('hours').string)
+      total += time
+
+      pid = entry.find('project-id').string
+
+      if pid in projects:
+        projects[pid] += projects[pid] + time
+      else:
+        projects[pid] = time
+
+    return projects
+
+  def hoursToday(self):
+    now = datetime.datetime.now()
+   
+    return self.hoursByDay(now)
+
+
+
+basecamp = Basecamp()
+if __name__ == '__main__':
+  main()
