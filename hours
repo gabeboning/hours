@@ -19,7 +19,6 @@ def main():
   parser_view.add_argument('time', choices=['day', 'week', 'yesterday', ], default='day', nargs='?')
 
   args = parser.parse_args()
-  print args.time
   if args.time == 'day':
     listToday()
 
@@ -32,30 +31,28 @@ def listYesterday():
   yesterday = today - datetime.timedelta(1)
 
   breakdown = basecamp.hoursByDay(yesterday)
-  total = 0
-  for key, value in breakdown.iteritems():
-    print "{0:>30s}=>{1:10.1f}".format(basecamp.getProjectName(key), value)
-    total += value
-
-  print "-"*22
-  print "{0:>10}=>{1:10.1f}".format("Total", total)
-
+  print "Hour breakdown for yesterday:"
+  printBreakdown(breakdown)
 
 def listToday():
   #total = basecamp.hoursToday()
   #print str(total) + " hours logged in basecamp today"
   breakdown = basecamp.hoursToday()
+  print "Hour breakdown for today:"
+  printBreakdown(breakdown)
 
 
+
+
+def printBreakdown(breakdown):
   total = 0
   for key, value in breakdown.iteritems():
-    print "{0:>30s}=>{1:10.1f}".format(basecamp.getProjectName(key), value)
+    info = basecamp.getProjectInfo(key)
+    print "{company:10} {name:30} | {hours:>3.1f}".format(company=("("+info['client'][:8]+")"), name=info['name'][:30], hours=value)
     total += value
 
-  print "-"*22
-  print "{0:>10}=>{1:10.1f}".format("Total", total)
-
-
+  print "-"*48
+  print " "*11+"{0:30} | {1:>3.1f}".format("Total", total)
 
 
 class Basecamp:
@@ -84,11 +81,11 @@ class Basecamp:
 
     return total
 
-  def getProjectName(self, project_id):
+  def getProjectInfo(self, project_id):
     r = requests.get(self.bcUrl + "/projects/" + project_id + ".xml", auth=self.auth)
     xml = BeautifulSoup(r.text)
 
-    return xml.find("name").string
+    return {"name":xml.find("name").string, "client":xml.find("company").find("name").string}
   
   def hoursByDay(self, date):
     bcDate = date.strftime("%Y%m%d")
