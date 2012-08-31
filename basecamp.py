@@ -9,7 +9,7 @@ import argparse
 
 class Basecamp:
   def __init__(self):
-    # get the config from git
+    # get the config from git... it was there for the git post-commit hook. should change this
     self.bcUser = subprocess.check_output("git config basecamp.user-id", shell=True).strip()
     self.bcKey = subprocess.check_output("git config basecamp.key", shell=True).strip()
     self.bcUrl = subprocess.check_output("git config basecamp.url", shell=True).strip()
