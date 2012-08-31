@@ -15,11 +15,8 @@ from prettytable import *
 def main():
 
   parser = argparse.ArgumentParser()
-  subparsers = parser.add_subparsers()
-  parser.set_defaults(view='time')
 
-  parser_view = subparsers.add_parser('view')
-  parser_view.add_argument('time', choices=['day', 'week', 'yesterday', ], default='day', nargs='?')
+  parser.add_argument('time', choices=['day', 'week', 'yesterday'], default='day', nargs='?')
 
   args = parser.parse_args()
   if args.time == 'day':
