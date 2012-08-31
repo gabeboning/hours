@@ -95,7 +95,6 @@ class Basecamp:
     for entry in entries.findAll('time-entry'):
       time = float(entry.find('hours').string)
       total += time
-      print time
 
       pid = entry.find('project-id').string
 
