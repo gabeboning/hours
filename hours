@@ -24,6 +24,9 @@ def main():
 
   elif args.time == 'yesterday':
     listYesterday()
+
+  elif args.time == 'week':
+    listWeek()
   
 
 def listYesterday():
@@ -43,6 +46,10 @@ def listToday():
 
 
 
+def listWeek():
+  breakdown = basecamp.hoursWeek()
+  print "Hour breakdown for the week:"
+  printBreakdown(breakdown)
 
 def printBreakdown(breakdown):
   total = 0
@@ -69,17 +76,7 @@ class Basecamp:
     r = requests.get(self.bcUrl + "/time_entries/report.xml?subject_id=" + self.bcUser + "&from=" + fromDate + "&to=" + toDate, auth=self.auth)
     return BeautifulSoup(r.text)
 
-  def hoursToday(self):
-    now = datetime.datetime.now()
-    bcDate = now.strftime("%Y%m%d")
 
-    entries = self.getReport(bcDate, bcDate)
-
-    total = 0
-    for time in entries.findAll('hours'):
-      total += float(time.string)
-
-    return total
 
   def getProjectInfo(self, project_id):
     r = requests.get(self.bcUrl + "/projects/" + project_id + ".xml", auth=self.auth)
@@ -87,31 +84,42 @@ class Basecamp:
 
     return {"name":xml.find("name").string, "client":xml.find("company").find("name").string}
   
-  def hoursByDay(self, date):
-    bcDate = date.strftime("%Y%m%d")
+  def hoursRange(self, start, end):
+    start = start.strftime("%Y%m%d")
+    end = end.strftime("%Y%m%d")
 
-    entries = self.getReport(bcDate, bcDate)
+    entries = self.getReport(start, end)
     projects = {}
     total = 0
 
     for entry in entries.findAll('time-entry'):
       time = float(entry.find('hours').string)
       total += time
+      print time
 
       pid = entry.find('project-id').string
 
       if pid in projects:
-        projects[pid] += projects[pid] + time
+        projects[pid] += time
       else:
         projects[pid] = time
 
     return projects
+
+  def hoursByDay(self, date):
+    return self.hoursRange(date, date)  
 
   def hoursToday(self):
     now = datetime.datetime.now()
    
     return self.hoursByDay(now)
 
+
+  def hoursWeek(self):
+    now = datetime.datetime.now()
+    monday = now - datetime.timedelta(now.weekday())
+
+    return self.hoursRange(monday, now)
 
 
 basecamp = Basecamp()
