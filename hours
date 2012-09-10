@@ -17,10 +17,10 @@ def main():
 
   parser = argparse.ArgumentParser()
 
-  parser.add_argument('time', choices=['day', 'week', 'yesterday'], default='day', nargs='?')
+  parser.add_argument('time', choices=['today', 'week', 'yesterday'], default='today', nargs='?')
 
   args = parser.parse_args()
-  if args.time == 'day':
+  if args.time == 'today':
     listToday()
 
   elif args.time == 'yesterday':
